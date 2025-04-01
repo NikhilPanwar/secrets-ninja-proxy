@@ -6,10 +6,10 @@ from requests.auth import HTTPBasicAuth
 router = APIRouter()
 
 def parse_connection_string(connection_string):
-    if not connection_string.startswith("amqp://"):
-        raise ValueError("Invalid AMQP connection string")
-    without_amqp = connection_string.replace("amqp://", "")
-    creds, host_port = without_amqp.split("@")
+    if not connection_string.startswith(("amqp://", "amqps://")):
+        raise ValueError("Invalid AMQP/AMQPS connection string")
+    scheme_removed = connection_string.split("://", 1)[1]
+    creds, host_port = scheme_removed.split("@")
     username, password = creds.split(":")
     host, port = host_port.split(":")
     return username, password, host, port
@@ -22,8 +22,9 @@ async def get_queues(request: Request):
         raise HTTPException(status_code=400, detail="Missing connection string")
     try:
         username, password, host, port = parse_connection_string(connection_string)
-        url = f"http://{host}:15672/api/queues"
-        response = requests.get(url, auth=HTTPBasicAuth(username, password))
+        protocol = "https" if connection_string.startswith("amqps://") else "http"
+        url = f"{protocol}://{host}:15672/api/queues"
+        response = requests.get(url, auth=HTTPBasicAuth(username, password), verify=False if protocol=="https" else True)
         if response.status_code == 200:
             queues = response.json()
             result = []
