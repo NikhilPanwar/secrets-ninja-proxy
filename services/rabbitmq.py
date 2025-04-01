@@ -11,7 +11,11 @@ def parse_connection_string(connection_string):
     scheme_removed = connection_string.split("://", 1)[1]
     creds, host_port = scheme_removed.split("@")
     username, password = creds.split(":")
-    host, port = host_port.split(":")
+    if ":" in host_port:
+        host, port = host_port.split(":")
+    else:
+        host = host_port
+        port = "5671" if connection_string.startswith("amqps://") else "5672"
     return username, password, host, port
 
 @router.post("/get_queues")
