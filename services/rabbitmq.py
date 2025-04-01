@@ -28,7 +28,7 @@ async def get_queues(request: Request):
         username, password, host, port = parse_connection_string(connection_string)
         protocol = "https" if connection_string.startswith("amqps://") else "http"
         url = f"{protocol}://{host}:15672/api/queues"
-        response = requests.get(url, auth=HTTPBasicAuth(username, password), verify=False if protocol=="https" else True)
+        response = requests.get(url, auth=HTTPBasicAuth(username, password), timeout=15, verify=False if protocol=="https" else True)
         if response.status_code == 200:
             queues = response.json()
             result = []
