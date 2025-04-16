@@ -6,41 +6,39 @@ from urllib.parse import urlparse, parse_qs
 router = APIRouter()
 
 def connect_to_postgres(postgres_uri):
-    try:
-        conn = psycopg2.connect(postgres_uri)
-        return conn
-    except psycopg2.OperationalError:
+    def try_connect(uri):
         try:
-            parsed_uri = urlparse(postgres_uri)
-            query_params = parse_qs(parsed_uri.query)
-            
-            if 'sslmode' not in query_params or 'require' in query_params['sslmode']:
-                netloc = parsed_uri.netloc
-                path = parsed_uri.path
-                
-                new_params = {k: v[0] for k, v in query_params.items() if k != 'sslmode'}
-                new_params['sslmode'] = 'disable'
-                query_string = '&'.join([f"{k}={v}" for k, v in new_params.items()])
-                
-                new_uri = f"{parsed_uri.scheme}://{netloc}{path}?{query_string}"
-                conn = psycopg2.connect(new_uri)
-                return conn
-            
-            elif 'disable' in query_params['sslmode']:
-                netloc = parsed_uri.netloc
-                path = parsed_uri.path
-                
-                new_params = {k: v[0] for k, v in query_params.items() if k != 'sslmode'}
-                new_params['sslmode'] = 'require'
-                query_string = '&'.join([f"{k}={v}" for k, v in new_params.items()])
-                
-                new_uri = f"{parsed_uri.scheme}://{netloc}{path}?{query_string}"
-                conn = psycopg2.connect(new_uri)
-                return conn
-            
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to connect to PostgreSQL: {str(e)}")
+            return psycopg2.connect(uri)
+        except psycopg2.OperationalError:
+            return None
+
+    conn = try_connect(postgres_uri)
+    if conn:
+        return conn
+
+    try:
+        parsed_uri = urlparse(postgres_uri)
+        query_params = parse_qs(parsed_uri.query)
+
+        current_sslmode = query_params.get('sslmode', ['require'])[0]
+
+        # Flip sslmode
+        new_sslmode = 'disable' if current_sslmode == 'require' else 'require'
+
+        new_params = {k: v[0] for k, v in query_params.items() if k != 'sslmode'}
+        new_params['sslmode'] = new_sslmode
+        query_string = '&'.join([f"{k}={v}" for k, v in new_params.items()])
+
+        new_uri = f"{parsed_uri.scheme}://{parsed_uri.netloc}{parsed_uri.path}?{query_string}"
+
+        conn = try_connect(new_uri)
+        if conn:
+            return conn
+
+        raise HTTPException(status_code=500, detail="Failed to connect to PostgreSQL with both sslmode options")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to connect to PostgreSQL: {str(e)}")
             
 @router.post("/list_databases")
 async def list_databases(request: Request):
