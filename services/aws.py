@@ -79,6 +79,41 @@ async def get_cost_and_usage(request: Request):
     except ClientError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/get_service_cost_and_usage")
+async def get_service_cost_and_usage(request: Request):
+    data = await request.json()
+    aws_access_key = data.get("aws_access_key")
+    aws_secret_key = data.get("aws_secret_key")
+    region = "us-east-1"  # Cost Explorer works only in us-east-1
+    if not aws_access_key or not aws_secret_key:
+        raise HTTPException(status_code=400, detail="Missing AWS credentials")
+    try:
+        start = datetime.today().replace(day=1).strftime("%Y-%m-%d")
+        end = datetime.today().strftime("%Y-%m-%d")
+        ce_client = boto3.client(
+            "ce",
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+            region_name=region
+        )
+        response = ce_client.get_cost_and_usage(
+            TimePeriod={
+                "Start": start,
+                "End": end
+            },
+            Granularity="MONTHLY",
+            Metrics=["UnblendedCost"],
+            GroupBy=[
+                {
+                    'Type': 'DIMENSION',
+                    'Key': 'SERVICE'
+                }
+            ]
+        )
+        return {"cost_and_usage": response.get('ResultsByTime', [])}
+    except ClientError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/list_account_aliases")
 async def list_account_aliases(request: Request):
     data = await request.json()
