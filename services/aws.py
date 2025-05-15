@@ -52,7 +52,6 @@ async def list_ec2_instances(request: Request):
 
 @router.post("/get_cost_and_usage")
 async def get_cost_and_usage(request: Request):
-    from datetime import datetime
     data = await request.json()
     aws_access_key = data.get("aws_access_key")
     aws_secret_key = data.get("aws_secret_key")
