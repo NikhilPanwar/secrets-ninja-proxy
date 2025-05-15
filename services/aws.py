@@ -189,3 +189,43 @@ async def get_caller_identity(request: Request):
         return {"caller_identity": response}
     except ClientError as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/describe_organization")
+async def describe_organization(request: Request):
+    data = await request.json()
+    aws_access_key = data.get("aws_access_key")
+    aws_secret_key = data.get("aws_secret_key")
+    region = data.get("region", "us-east-1")
+    if not aws_access_key or not aws_secret_key:
+        raise HTTPException(status_code=400, detail="Missing AWS credentials")
+    try:
+        org_client = boto3.client(
+            "organizations",
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+            region_name=region
+        )
+        response = org_client.describe_organization()
+        return {"organization": response}
+    except ClientError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/get_contact_information")
+async def get_contact_information(request: Request):
+    data = await request.json()
+    aws_access_key = data.get("aws_access_key")
+    aws_secret_key = data.get("aws_secret_key")
+    region = data.get("region", "us-east-1")
+    if not aws_access_key or not aws_secret_key:
+        raise HTTPException(status_code=400, detail="Missing AWS credentials")
+    try:
+        account_client = boto3.client(
+            "account",
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+            region_name=region
+        )
+        response = account_client.get_contact_information()
+        return {"contact_information": response}
+    except ClientError as e:
+        raise HTTPException(status_code=500, detail=str(e))
