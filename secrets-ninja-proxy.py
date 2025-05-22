@@ -5,7 +5,7 @@ import requests
 from urllib.parse import unquote
 import json
 
-from services import aws, mongodb, rabbitmq, postgres
+from services import aws, mongodb, rabbitmq, postgres, gcp
 
 app = FastAPI()
 
@@ -13,6 +13,7 @@ app.include_router(aws.router, prefix="/aws", tags=["aws"])
 app.include_router(mongodb.router, prefix="/mongodb", tags=["mongodb"])
 app.include_router(rabbitmq.router, prefix="/rabbitmq", tags=["rabbitmq"])
 app.include_router(postgres.router, prefix="/postgres", tags=["postgres"])
+app.include_router(gcp.router, prefix="/gcp", tags=["gcp"])
 
 app.add_middleware(
     CORSMiddleware,
