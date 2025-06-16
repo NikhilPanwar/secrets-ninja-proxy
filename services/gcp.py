@@ -3,6 +3,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from google.cloud import storage
 from google.cloud import iam
+import json
 
 router = APIRouter()
 
@@ -10,6 +11,7 @@ router = APIRouter()
 async def list_projects(request: Request):
     data = await request.json()
     gcp_creds = data.get("gcp_creds")
+    gcp_creds = json.loads(gcp_creds)
     if not gcp_creds:
         raise HTTPException(status_code=400, detail="Missing GCP credentials")
     try:
