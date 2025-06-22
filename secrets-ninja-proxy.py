@@ -58,7 +58,7 @@ async def fetch_handler(request: Request, rest_of_path: str):
         json_body = await request.json()
     except:
         json_body = {}
-    method = json_body.get("proxied_data", {}).get("method", "GET")
+    method = json_body.get("proxied_data", {})
     headers = json_body.get("proxied_data", {}).get("headers", {})
     real_headers = dict(request.headers)
     headers = clean_headers(real_headers)
